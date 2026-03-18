@@ -38,6 +38,10 @@ const AppRouter: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'scraper' | 'settings'>('dashboard');
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(Platform.INSTAGRAM);
 
+  const api = axios.create({
+    baseURL: `${import.meta.env.VITE_API_URL}/api/`,
+  });
+  
   useEffect(() => {
     instance.initialize()
       .then(() => instance.handleRedirectPromise())
@@ -49,7 +53,7 @@ const AppRouter: React.FC = () => {
           const token = localStorage.getItem('access_token');
           if (!token && result){
             try{
-              const response = await fetch(`https://webappmultiscrapperultrapropremium8khnunah-hrfphtetfuc7cjcp.canadacentral-01.azurewebsites.net/api/auth/azure-login/`, {
+              const response = await fetch(f`{api}auth/azure-login/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ access_token: result.idToken }),
