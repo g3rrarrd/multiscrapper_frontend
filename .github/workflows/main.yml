@@ -30,7 +30,8 @@ jobs:
           ###### Configuración de rutas ######
           app_location: "/" 
           api_location: ""  
-          output_location: "dist" 
+          output_location: "dist"
+          app_artifact_location: "dist"
         
         env: # Las variables deben estar AQUÍ para que Vite las vea al compilar
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
