@@ -49,7 +49,7 @@ const AppRouter: React.FC = () => {
           const token = localStorage.getItem('access_token');
           if (!token && result){
             try{
-              const response = await fetch(`http://localhost:8000/api/auth/azure-login/`, {
+              const response = await fetch(`https://webappmultiscrapperultrapropremium8khnunah-hrfphtetfuc7cjcp.canadacentral-01.azurewebsites.net/api/auth/azure-login/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ token: result.idToken }),
