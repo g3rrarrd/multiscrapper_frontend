@@ -1,0 +1,5 @@
+{
+  "name": "SocialMedia Pro Scraper Dashboard",
+  "description": "A high-performance web dashboard for multi-platform social media scraping and analysis, adapting the legacy Python scripts into a modern React + Django architecture.",
+  "requestFramePermissions": []
+}
