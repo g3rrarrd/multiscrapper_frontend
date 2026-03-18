@@ -52,7 +52,7 @@ const AppRouter: React.FC = () => {
               const response = await fetch(`https://webappmultiscrapperultrapropremium8khnunah-hrfphtetfuc7cjcp.canadacentral-01.azurewebsites.net/api/auth/azure-login/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: result.idToken }),
+                body: JSON.stringify({ access_token: result.idToken }),
               });
 
               const data = await response.json();
