@@ -38,9 +38,7 @@ const AppRouter: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'scraper' | 'settings'>('dashboard');
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(Platform.INSTAGRAM);
 
-  const api = axios.create({
-    baseURL: `${import.meta.env.VITE_API_URL}/api/`,
-  });
+  const api = `${import.meta.env.VITE_API_URL}/api/`,
   
   useEffect(() => {
     instance.initialize()
