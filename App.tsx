@@ -49,7 +49,7 @@ const AppRouter: React.FC = () => {
         if (account) {
           instance.setActiveAccount(account);
 
-          const token = localStorage.getItem('access_token');
+          const token = localStorage.getItem('token');
           // Si hay un resultado de login pero no tenemos token del backend aún
           if (!token && result) {
             try {
