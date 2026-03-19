@@ -38,35 +38,38 @@ const AppRouter: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'scraper' | 'settings'>('dashboard');
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(Platform.INSTAGRAM);
 
-  const api = `${import.meta.env.VITE_API_URL}/api/`,
+  const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, "");
+  const api = `${baseUrl}/api/`;
   
   useEffect(() => {
     instance.initialize()
       .then(() => instance.handleRedirectPromise())
       .then(async (result) => {
         const account = result?.account ?? instance.getActiveAccount() ?? accounts[0];
-        if (account){
-          instance.setActiveAccount(account)
+        if (account) {
+          instance.setActiveAccount(account);
 
           const token = localStorage.getItem('access_token');
-          if (!token && result){
-            try{
-              const response = await fetch(f`{api}auth/azure-login/`, {
+          // Si hay un resultado de login pero no tenemos token del backend aún
+          if (!token && result) {
+            try {
+              // CORRECCIÓN: Eliminada la 'f' y arreglado el template string
+              const response = await fetch(`${api}auth/azure-login/`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ access_token: result.idToken }),
               });
 
               const data = await response.json();
-              if (data.access){
+              if (data.access) {
                 localStorage.setItem('access_token', data.access);
                 localStorage.setItem('refresh_token', data.refresh);
                 setIsBackendAuthenticated(true);
               }
-            }  catch (err){
-            console.error('Error during backend authentication:', err);
-          } 
-          } else if (token){
+            } catch (err) {
+              console.error('Error during backend authentication:', err);
+            }
+          } else if (token) {
             setIsBackendAuthenticated(true);
           }
         }
