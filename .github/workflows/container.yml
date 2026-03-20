@@ -1,12 +1,13 @@
-name: Docker Build and Push to ACR
+name: Docker Build and Push
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+    branches: [ main ]
+
+# PERMISOS NECESARIOS
+permissions:
+  contents: read
+  packages: write
 
 jobs:
   build-and-push:
@@ -15,36 +16,30 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 1. Login en GitHub Container Registry (Opcional, pero recomendado)
-      - name: Login to GitHub Container Registry
+      # 1. Login en GitHub Container Registry usando el token del sistema
+      - name: Login to GHCR
         uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 2. Login en Azure Container Registry (ACR)
-      - name: Login to Azure Container Registry
+      # 2. Login en Azure ACR (Asegúrate de tener estos secrets en GitHub)
+      - name: Login to ACR
         uses: azure/docker-login@v1
         with:
           login-server: ${{ secrets.ACR_NAME }}.azurecr.io
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
 
-      # 3. Construir y Etiquetar la imagen
-      # Se etiqueta para GitHub y para Azure simultáneamente
-      - name: Build and Tag Docker Image
+      # 3. Build y Tag (Cambiado a 'frontend' para ser exactos)
+      - name: Build and Tag
         run: |
-          docker build . -t ghcr.io/${{ github.repository }}/scraper:latest \
-                         -t ${{ secrets.ACR_NAME }}.azurecr.io/scraper-loto:latest \
-                         -t ${{ secrets.ACR_NAME }}.azurecr.io/scraper-loto:${{ github.sha }}
+          docker build . -t ghcr.io/${{ github.repository }}/frontend:latest \
+                         -t ${{ secrets.ACR_NAME }}.azurecr.io/multiscrapper-frontend:latest
 
-      # 4. Push a GitHub Packages
-      - name: Push to GHCR
-        run: docker push ghcr.io/${{ github.repository }}/scraper:latest
-
-      # 5. Push a Azure Container Registry
-      - name: Push to ACR
+      # 4. Push a ambos registros
+      - name: Push Images
         run: |
-          docker push ${{ secrets.ACR_NAME }}.azurecr.io/scraper-loto:latest
-          docker push ${{ secrets.ACR_NAME }}.azurecr.io/scraper-loto:${{ github.sha }}
+          docker push ghcr.io/${{ github.repository }}/frontend:latest
+          docker push ${{ secrets.ACR_NAME }}.azurecr.io/multiscrapper-frontend:latest
