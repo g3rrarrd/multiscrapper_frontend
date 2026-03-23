@@ -33,6 +33,9 @@ jobs:
           acrPassword: ${{ secrets.ACR_PASSWORD }}
           containerAppName: probandocontainergithubgenio
           resourceGroup: NetworkWatcherRG
+          buildArguments: |
+            VITE_ENTRA_CLIENT_ID=${{ secrets.VITE_ENTRA_CLIENT_ID }}
+            VITE_ENTRA_TENANT_ID=${{ secrets.VITE_ENTRA_TENANT_ID }}
           environmentVariables: |
              VITE_API_URL=${{ secrets.VITE_API_URL }}
              VITE_ENTRA_CLIENT_ID=${{ secrets.VITE_ENTRA_CLIENT_ID }}
