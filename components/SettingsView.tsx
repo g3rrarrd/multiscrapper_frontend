@@ -34,9 +34,14 @@ export const SettingsView: React.FC = () => {
         yt: { general: keys.yt_keys.split(',').map(k => k.trim()).filter(k => k) }
       };
 
+      const token = localStorage.getItem('access_token');
+
       const response = await fetch(`${baseUrl}api/scraper/bulk_update/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
         body: JSON.stringify(payload),
       });
 

@@ -20,6 +20,7 @@ export const ScraperView: React.FC<{ platform: Platform }> = ({ platform: initia
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isFetchingRef = useRef(false);
 
   // Configuración de API
   const baseUrl = import.meta.env.VITE_API_URL;
@@ -36,6 +37,17 @@ export const ScraperView: React.FC<{ platform: Platform }> = ({ platform: initia
       setProgress(0);
     }
   }, [isProcessing, isPolling]);
+
+  const getExpectedCount = () => {
+    switch(currentPlatform) {
+      case 'yt': return 25;
+      case 'x': return 20;
+      case 'fb': return 16;
+      case 'tk': return 15;
+      case 'ig': return 12;
+      default: return 10;
+    }
+  };
 
   // Limpieza de URLs para extraer solo el username
   const cleanTarget = (input: string): string => {
@@ -76,24 +88,56 @@ export const ScraperView: React.FC<{ platform: Platform }> = ({ platform: initia
 
   // Obtención de resultados (Polling)
   const fetchResults = async () => {
+    if (isFetchingRef.current) return;
+
     try {
-      const params = new URLSearchParams({ platform: currentPlatform.toLowerCase() });
+      isFetchingRef.current = true;
+      const token = localStorage.getItem('access_token');
+
+      const params = new URLSearchParams({ 
+        platform: currentPlatform.toLowerCase() 
+      });
       if (lastStartedAt) params.append('since', lastStartedAt);
 
-      const response = await fetch(`${API_BASE}/latest_results/?${params.toString()}`);
+      const response = await fetch(`${API_BASE}/latest_results/?${params.toString()}`, {
+        method: 'GET',
+        headers: { 
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        },
+      });
+
       if (response.ok) {
         const newData: ScrapeResult[] = await response.json();
+        
         if (newData.length > 0) {
           setResults(prev => {
             const combined = [...newData, ...prev];
-            return Array.from(new Map(combined.map(item => [item.id, item])).values());
+            // Eliminar duplicados por ID
+            const uniqueResults = Array.from(
+              new Map(combined.map(item => [item.id, item])).values()
+            );
+
+            // 2. Lógica de parada: Si ya tenemos lo que esperábamos de la plataforma
+            if (uniqueResults.length >= getExpectedCount()) {
+              setIsPolling(false);
+              setStatus(`Proceso completado con ${uniqueResults.length} registros.`);
+              setProgress(100);
+            }
+            return uniqueResults;
           });
-          setStatus(`Actualizado: ${newData.length} nuevos datos recibidos...`);
-          setProgress(100);
         }
+      } else {
+        // 3. Si hay error (401, 500, etc.), detenemos el polling para no saturar
+        setIsPolling(false);
+        setStatus(response.status === 401 ? "Sesión expirada." : "Error al obtener resultados.");
       }
     } catch (error) {
       console.error("Polling error:", error);
+      setIsPolling(false); // Detener también si hay error de red
+    } finally {
+      // 4. CRÍTICO: Liberar el bloqueo siempre, pase lo que pase
+      isFetchingRef.current = false;
     }
   };
 
@@ -127,9 +171,14 @@ export const ScraperView: React.FC<{ platform: Platform }> = ({ platform: initia
     setStatus(`Iniciando extracción en ${currentPlatform.toUpperCase()} para: ${targets.join(', ')}`);
 
     try {
+      const token = localStorage.getItem('access_token');
+
       const response = await fetch(`${API_BASE}/trigger_extraction/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
         body: JSON.stringify({ platform: currentPlatform.toLowerCase(), targets }),
       });
 
@@ -159,7 +208,12 @@ export const ScraperView: React.FC<{ platform: Platform }> = ({ platform: initia
     setStatus(`Buscando registros de "${searchTerm}"...`);
     
     try {
-      const response = await fetch(`${API_BASE}/user_history/?query=${encodeURIComponent(searchTerm)}`);
+      const token = localStorage.getItem('access_token');
+
+      const response = await fetch(`${API_BASE}/user_history/?query=${encodeURIComponent(searchTerm)}`, {
+        method: 'GET',
+        headers: { 'Authorization': token ? `Bearer ${token}` : '' },
+      });
       if (response.ok) {
         const data = await response.json();
         setResults(data);
@@ -206,17 +260,33 @@ export const ScraperView: React.FC<{ platform: Platform }> = ({ platform: initia
   // Exportar a CSV
   const downloadCSV = () => {
     if (results.length === 0) return;
-    const headers = ['Username', 'Platform', 'Followers', 'Date', 'Likes', 'Comments', 'Sentiment'];
+    const headers = [
+      'ID', 'Platform', 'Username', 'Followers', 'Date', 'Likes', 'Comments', 
+      'Views', 'Is Loto', 'Global Sentiment', 'Joy', 'Trust', 'Fear', 
+      'Surprise', 'Sadness', 'Disgust', 'Anger', 'Anticipation', 'Description'
+    ];
     const csvContent = "\uFEFF" + [
       headers.join(','),
       ...results.map(r => [
-        r.username, 
-        r.platform?.toUpperCase() || currentPlatform.toUpperCase(), 
+r.id,
+        r.platform?.toUpperCase() || currentPlatform.toUpperCase(),
+        `"${r.username}"`,
         r.followers || 0,
-        r.post_date, 
-        r.likes, 
-        r.comments, 
-        r.sentiment
+        r.post_date || '',
+        r.likes || 0,
+        r.comments || 0,
+        r.views || 0,
+        r.is_loto ? 'YES' : 'NO',
+        r.sentimiento_global || 'N/A',
+        r.alegria || 0,
+        r.confianza || 0,
+        r.miedo || 0,
+        r.sorpresa || 0,
+        r.tristeza || 0,
+        r.aversion || 0,
+        r.ira || 0,
+        r.anticipacion || 0,
+        `"${(r.description || '').replace(/"/g, '""')}"`
       ].join(','))
     ].join('\n');
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
