@@ -29,9 +29,10 @@ jobs:
           appSourcePath: ${{ github.workspace }}
           dockerfilePath: Dockerfile  # Nombre exacto de tu archivo
           acrName: testcontainern
+          acrUsername: ${{ secrets.ACR_USERNAME }}
+          acrPassword: ${{ secrets.ACR_PASSWORD }}
           containerAppName: probandocontainergithubgenio
           resourceGroup: NetworkWatcherRG
-          imageToBuild: mcr.microsoft.com/azuredocs/containerapps-helloworld:latest # Imagen base temporal o la tuya propia
           environmentVariables: |
              VITE_API_URL=${{ secrets.VITE_API_URL }}
              VITE_ENTRA_CLIENT_ID=${{ secrets.VITE_ENTRA_CLIENT_ID }}
