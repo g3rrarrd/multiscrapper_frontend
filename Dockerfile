@@ -3,6 +3,12 @@ FROM node:18-alpine AS build
 
 WORKDIR /app
 
+ARG VITE_ENTRA_CLIENT_ID
+ARG VITE_ENTRA_TENANT_ID
+
+ENV VITE_ENTRA_CLIENT_ID=$VITE_ENTRA_CLIENT_ID
+ENV VITE_ENTRA_TENANT_ID=$VITE_ENTRA_TENANT_ID
+
 # Copiamos los archivos de dependencias de Node
 COPY package*.json ./
 RUN npm install
