@@ -46,7 +46,7 @@ export const RoleManager: React.FC<{ token: string }> = ({ token }) => {
     setMessage(null);
 
     try {
-      const response = await fetch('http://localhost:8000/api/scraper/assign_role/', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/scraper/assign_role/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
