@@ -6,14 +6,13 @@ import {
   Search, 
   Settings, 
   Github,
-  LogOut // Importamos el icono de cerrar sesión
+  LogOut 
 } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
   activeTab: 'dashboard' | 'scraper' | 'settings';
   setActiveTab: (tab: 'dashboard' | 'scraper' | 'settings') => void;
-  // Añadimos las nuevas props para manejar el usuario y el logout
   user: { displayName: string; email: string };
   onLogout: () => void;
 }

@@ -12,6 +12,7 @@ import { Dashboard } from './components/Dashboard';
 import { ScraperView } from './components/ScraperView';
 import { SettingsView } from './components/SettingsView';
 import { Platform } from './types';
+import { RoleManager } from './components/RoleManage';
 
 /** Singleton MSAL instance — creado una sola vez fuera del árbol React */
 const msalInstance = new PublicClientApplication(msalConfig);
@@ -37,6 +38,7 @@ const AppRouter: React.FC = () => {
   const [isBackendAuthenticated, setIsBackendAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'scraper' | 'settings'>('dashboard');
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(Platform.INSTAGRAM);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'general' | 'roles'>('general');
 
   const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, "");
   const api = `${baseUrl}/api/`;
@@ -126,7 +128,50 @@ const AppRouter: React.FC = () => {
     >
       {activeTab === 'dashboard' && <Dashboard onPlatformSelect={navigateToScraper} />}
       {activeTab === 'scraper'   && <ScraperView platform={selectedPlatform} />}
-      {activeTab === 'settings'  && <SettingsView />}
+      {activeTab === 'settings' && (
+        <div className="space-y-6">
+          {/* Header de Configuración */}
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Configuración</h2>
+              <p className="text-slate-500 text-sm">Administra el comportamiento del sistema y permisos.</p>
+            </div>
+          </div>
+
+          {/* NAVEGACIÓN DE SUB-PESTAÑAS */}
+          <div className="flex border-b border-slate-200">
+            <button
+              onClick={() => setActiveSettingsTab('general')}
+              className={`px-6 py-3 text-sm font-semibold transition-all border-b-2 ${
+                activeSettingsTab === 'general'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              General & API Keys
+            </button>
+            <button
+              onClick={() => setActiveSettingsTab('roles')}
+              className={`px-6 py-3 text-sm font-semibold transition-all border-b-2 ${
+                activeSettingsTab === 'roles'
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-slate-500 hover:text-slate-700'
+              }`}
+            >
+              Gestión de Roles
+            </button>
+          </div>
+
+          {/* CONTENIDO CONDICIONAL DE SUB-PESTAÑAS */}
+          <div className="mt-6 animate-in fade-in duration-300">
+            {activeSettingsTab === 'general' ? (
+              <SettingsView />
+            ) : (
+              <RoleManager token={localStorage.getItem('access_token') || ''} />
+            )}
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
