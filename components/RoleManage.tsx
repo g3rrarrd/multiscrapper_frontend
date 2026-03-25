@@ -22,7 +22,7 @@ export const RoleManager: React.FC<{ token: string }> = ({ token }) => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('http://localhost:8000/api/scraper/list_users/', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/scraper/list_users/`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
