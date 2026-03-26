@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { emitPermissionDenied } from '../utils/permissionEvents';
 
 const api = axios.create({
   baseURL: `${import.meta.env.VITE_API_URL}/api/`,
@@ -17,9 +18,18 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    const status = error.response?.status;
+    const errorText = error.response?.data?.error;
+
+    if (status === 403 || errorText === 'No tienes permiso') {
+      emitPermissionDenied('No tienes permisos para realizar esta acción o ver este contenido.');
+    }
+
     if (error.response?.status === 401) {
       localStorage.removeItem('access_token');
-      window.location.href = '/login'; // O tu lógica de logout
+      localStorage.removeItem('refresh_token');
+      localStorage.removeItem('user_profile');
+      globalThis.location.href = '/';
     }
     return Promise.reject(error);
   }

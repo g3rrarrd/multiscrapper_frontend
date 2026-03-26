@@ -24,6 +24,7 @@ import api from '../api/axiosConfig'
 
 interface DashboardProps {
   onPlatformSelect: (platform: Platform) => void;
+  displayName?: string;
 }
 
 interface MetricsData {
@@ -36,7 +37,7 @@ interface MetricsData {
 
 const baseUrl = import.meta.env.VITE_API_URL;
 
-export const Dashboard: React.FC<DashboardProps> = ({ onPlatformSelect }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onPlatformSelect, displayName }) => {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -69,7 +70,9 @@ const platforms = [
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900">Welcome Back</h2>
+          <h2 className="text-3xl font-bold text-slate-900">
+            Bienvenido, <span className="text-blue-600">{displayName || 'Usuario'}</span> 👋
+          </h2>
           <p className="text-slate-500 mt-1">Monitor your scraping tasks and extracted data insights.</p>
         </div>
         <div className="bg-white px-4 py-2 rounded-lg border shadow-sm text-sm font-medium text-slate-600">

@@ -320,7 +320,7 @@ r.id,
             </div>
             <div className="min-w-0">
                 <h2 className="text-base sm:text-lg md:text-xl font-black text-slate-900 uppercase tracking-tight truncate">{currentPlatform} Scraper</h2>
-                <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Versión 1.0 - Alcance Completo</p>
+                <p className="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest">Versión 2.0 - Alcance Completo</p>
             </div>
         </div>
         
