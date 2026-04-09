@@ -4,17 +4,22 @@ import LogoLoto from '../utils/Logo loto-.svg';
 import { 
   LayoutDashboard, 
   Search, 
+  UserRound,
   Settings, 
   Github,
-  LogOut 
+  LogOut,
+  Sun,
+  Moon
 } from 'lucide-react';
 
 interface LayoutProps {
   children: React.ReactNode;
-  activeTab: 'dashboard' | 'scraper' | 'settings';
-  setActiveTab: (tab: 'dashboard' | 'scraper' | 'settings') => void;
+  activeTab: 'dashboard' | 'scraper' | 'perfil' | 'settings';
+  setActiveTab: (tab: 'dashboard' | 'scraper' | 'perfil' | 'settings') => void;
   user: { displayName: string; email: string };
   onLogout: () => void;
+  isDark: boolean;
+  onToggleTheme: () => void;
 }
 
 export const Layout: React.FC<LayoutProps> = ({ 
@@ -22,11 +27,14 @@ export const Layout: React.FC<LayoutProps> = ({
   activeTab, 
   setActiveTab, 
   user, 
-  onLogout 
+  onLogout,
+  isDark,
+  onToggleTheme,
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'scraper', label: 'Extractors', icon: Search },
+    { id: 'perfil', label: 'Perfil 360', icon: UserRound },
     { id: 'settings', label: 'Configuration', icon: Settings },
   ] as const;
 
@@ -96,6 +104,13 @@ export const Layout: React.FC<LayoutProps> = ({
             Social Media / <span className="text-slate-900 capitalize">{activeTab}</span>
           </div>
           <div className="flex items-center gap-4">
+            <button
+              onClick={onToggleTheme}
+              className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              title={isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            >
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
             <button className="p-2 text-slate-400 hover:text-slate-600 transition-colors">
               <Github size={20} />
             </button>

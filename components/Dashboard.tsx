@@ -24,6 +24,7 @@ import api from '../api/axiosConfig'
 
 interface DashboardProps {
   onPlatformSelect: (platform: Platform) => void;
+  displayName?: string;
 }
 
 interface MetricsData {
@@ -32,11 +33,12 @@ interface MetricsData {
   avg_engagement: number;
   platform_distribution: { [key: string]: number };
   weekly_volume: { [key: string]: number };
+  users_api_calls: { [key: string]: number };
 }
 
 const baseUrl = import.meta.env.VITE_API_URL;
 
-export const Dashboard: React.FC<DashboardProps> = ({ onPlatformSelect }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onPlatformSelect, displayName }) => {
   const [metrics, setMetrics] = useState<MetricsData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -69,7 +71,9 @@ const platforms = [
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-end">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900">Welcome Back</h2>
+          <h2 className="text-3xl font-bold text-slate-900">
+            Bienvenido, <span className="text-blue-600">{displayName || 'Usuario'}</span> 👋
+          </h2>
           <p className="text-slate-500 mt-1">Monitor your scraping tasks and extracted data insights.</p>
         </div>
         <div className="bg-white px-4 py-2 rounded-lg border shadow-sm text-sm font-medium text-slate-600">
@@ -78,11 +82,12 @@ const platforms = [
       </div>
 
       {/* Quick Stats con Datos Reales */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {[
           { label: 'Total Profiles', value: metrics?.total_profiles.toLocaleString(), icon: Users, color: 'text-blue-600', bg: 'bg-blue-50' },
           { label: 'Posts Extracted', value: metrics?.total_extracted.toLocaleString(), icon: Eye, color: 'text-emerald-600', bg: 'bg-emerald-50' },
           { label: 'Avg Engagement', value: `${metrics?.avg_engagement}%`, icon: Heart, color: 'text-rose-600', bg: 'bg-rose-50' },
+          { label: 'Top User', value: metrics && Object.entries(metrics.users_api_calls || {}).sort(([,a], [,b]) => b - a)[0]?.[0] || 'N/A', icon: Users, color: 'text-amber-600', bg: 'bg-amber-50' },
         ].map((stat, i) => (
           <div key={i} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
             <div>
@@ -162,6 +167,39 @@ const platforms = [
               );
             })}
           </div>
+        </div>
+      </div>
+
+      {/* Top Users Section */}
+      <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
+        <h3 className="text-lg font-bold text-slate-900 mb-6">User API Usage Ranking</h3>
+        <div className="space-y-4">
+          {Object.entries(metrics?.users_api_calls || {})
+            .sort(([, a], [, b]) => b - a)
+            .map(([userId, calls], index) => {
+              const totalCalls = Object.values(metrics?.users_api_calls || {}).reduce((sum, val) => sum + val, 0);
+              const percentage = totalCalls > 0 ? Math.round((calls / totalCalls) * 100) : 0;
+              
+              return (
+                <div key={userId} className="flex items-center justify-between p-4 rounded-lg border border-slate-100 hover:border-slate-200 transition-colors bg-slate-50">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold text-sm">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-900">{userId}</p>
+                      <p className="text-xs text-slate-500">{calls} API calls</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-lg font-bold text-slate-900">{percentage}%</p>
+                    <div className="w-24 h-2 bg-slate-200 rounded-full overflow-hidden mt-1">
+                      <div className="h-full bg-blue-600 rounded-full" style={{width: `${percentage}%`}}></div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
         </div>
       </div>
     </div>
