@@ -41,7 +41,7 @@ export const ScraperView: React.FC<{ platform: Platform }> = ({ platform: initia
   const getExpectedCount = () => {
     switch(currentPlatform) {
       case 'yt': return 25;
-      case 'x': return 20;
+      case 'x': return 19;
       case 'fb': return 16;
       case 'tk': return 15;
       case 'ig': return 12;
@@ -58,12 +58,10 @@ export const ScraperView: React.FC<{ platform: Platform }> = ({ platform: initia
         const url = new URL(cleaned.startsWith('http') ? cleaned : `https://${cleaned}`);
         const segments = url.pathname.split('/').filter(s => s.length > 0);
         
-        // Lógica para YouTube (Videos o Canales)
         if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
           return url.searchParams.get('v') || segments[segments.length - 1].replace('@', '');
         }
         
-        // Lógica para Facebook (Grupos o Páginas)
         if (segments.length > 0) {
           let user = segments[0];
           if (['groups', 'pages', 'reels'].includes(user) && segments[1]) user = segments[1];

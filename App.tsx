@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { ScraperView } from './components/ScraperView';
 import { SettingsView } from './components/SettingsView';
+import PerfilInfluencer from './components/PerfilInfluencer';
 import { Platform } from './types';
 import { RoleManager } from './components/RoleManage';
 import { PERMISSION_DENIED_EVENT, emitPermissionDenied } from './utils/permissionEvents';
@@ -23,10 +24,27 @@ const AppRouter: React.FC = () => {
   const [user, setUser] = useState<UserProfile>({ displayName: 'Usuario', email: '' });
   const [permissionModalOpen, setPermissionModalOpen] = useState(false);
   const [permissionMessage, setPermissionMessage] = useState('No tienes permisos para realizar esta acción o ver este contenido.');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'scraper' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'scraper' | 'perfil' | 'settings'>('dashboard');
   const [selectedPlatform, setSelectedPlatform] = useState<Platform>(Platform.INSTAGRAM);
   const [activeSettingsTab, setActiveSettingsTab] = useState<'general' | 'roles'>('general');
-  
+  const [isDark, setIsDark] = useState<boolean>(() => sessionStorage.getItem('theme') === 'dark');
+
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
+
+  const toggleTheme = () => {
+    setIsDark((prev) => {
+      const next = !prev;
+      sessionStorage.setItem('theme', next ? 'dark' : 'light');
+      return next;
+    });
+  };
+
   useEffect(() => {
     const accessToken = localStorage.getItem('access_token');
     const storedUser = localStorage.getItem('user_profile');
@@ -144,9 +162,12 @@ const AppRouter: React.FC = () => {
         setActiveTab={setActiveTab}
         user={user}
         onLogout={handleLogout}
+        isDark={isDark}
+        onToggleTheme={toggleTheme}
       >
         {activeTab === 'dashboard' && <Dashboard onPlatformSelect={navigateToScraper} displayName={user.displayName} />}
         {activeTab === 'scraper'   && <ScraperView platform={selectedPlatform} />}
+        {activeTab === 'perfil'    && <PerfilInfluencer />}
         {activeTab === 'settings' && (
           <div className="space-y-6">
             {/* Header de Configuración */}
