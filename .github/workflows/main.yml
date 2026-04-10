@@ -31,7 +31,7 @@ jobs:
           acrName: acrMtScrapper
           acrUsername: ${{ secrets.ACR_USERNAME }}
           acrPassword: ${{ secrets.ACR_PASSWORD }}
-          containerAppName: containerscraper
+          containerAppName: acamtscrapper
           resourceGroup: rb-bi-cac-dev
           buildArguments: |
             VITE_API_URL=${{ secrets.VITE_API_URL }}
