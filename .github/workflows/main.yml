@@ -1,0 +1,43 @@
+name: Trigger auto deployment for containerscrapper
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v3 # Actualizado a v3
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.CONTAINERSCRAPERGITHUBGENIO_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.CONTAINERSCRAPERGITHUBGENIO_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.CONTAINERSCRAPERGITHUBGENIO_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}
+          dockerfilePath: Dockerfile
+          acrName: testcontainern
+          acrUsername: ${{ secrets.ACR_USERNAME }}
+          acrPassword: ${{ secrets.ACR_PASSWORD }}
+          containerAppName: containerscraper
+          resourceGroup: rb-bi-cac-dev
+          buildArguments: |
+            VITE_ENTRA_CLIENT_ID=${{ secrets.VITE_ENTRA_CLIENT_ID }}
+            VITE_ENTRA_TENANT_ID=${{ secrets.VITE_ENTRA_TENANT_ID }}
+            VITE_API_URL=${{ secrets.VITE_API_URL }}
+          environmentVariables: |
+             VITE_API_URL=${{ secrets.VITE_API_URL }}
+             VITE_ENTRA_CLIENT_ID=${{ secrets.VITE_ENTRA_CLIENT_ID }}
+             VITE_ENTRA_TENANT_ID=${{ secrets.VITE_ENTRA_TENANT_ID }}
