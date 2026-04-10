@@ -28,7 +28,7 @@ jobs:
         with:
           appSourcePath: ${{ github.workspace }}
           dockerfilePath: Dockerfile
-          acrName: testcontainern
+          acrName: acrMtScrapper
           acrUsername: ${{ secrets.ACR_USERNAME }}
           acrPassword: ${{ secrets.ACR_PASSWORD }}
           containerAppName: containerscraper
