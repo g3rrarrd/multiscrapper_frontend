@@ -32,7 +32,7 @@ jobs:
           acrUsername: ${{ secrets.ACR_USERNAME }}
           acrPassword: ${{ secrets.ACR_PASSWORD }}
           containerAppName: containerscraper
-          resourceGroup: rb-bi-cac-dev
+          resourceGroup: rg-bi-cac-dev
           buildArguments: |
             VITE_API_URL=${{ secrets.VITE_API_URL }}
           environmentVariables: |
