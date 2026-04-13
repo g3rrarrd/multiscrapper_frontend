@@ -84,7 +84,6 @@ export const PerfilInfluencer: React.FC = () => {
 	const regexError = useMemo(() => {
 		if (!regexMode || !listFilter.trim()) return null;
 		try {
-			// Validate regex input to avoid runtime errors while typing.
 			new RegExp(listFilter, 'i');
 			return null;
 		} catch {
@@ -120,6 +119,18 @@ export const PerfilInfluencer: React.FC = () => {
 		const defaults = ['all', 'platform', 'post_date', 'date', 'followers', 'likes', 'comments', 'views', 'description', 'sentimiento_global', 'is_loto'];
 		const dynamic = profile?.posts.flatMap((post) => Object.keys(post)) ?? [];
 		return Array.from(new Set([...defaults, ...dynamic]));
+	}, [profile]);
+
+	const latestPostDate = useMemo(() => {
+		if (!profile?.posts?.length) return profile?.latest_post_date ?? null;
+		let max: Date | null = null;
+		for (const post of profile.posts) {
+			const rawDate = post.post_date ?? post.date;
+			if (!rawDate) continue;
+			const d = new Date(String(rawDate));
+			if (!Number.isNaN(d.getTime()) && (max === null || d > max)) max = d;
+		}
+		return max ? max.toISOString() : profile.latest_post_date ?? null;
 	}, [profile]);
 
 	const filteredPosts = useMemo(() => {
@@ -381,7 +392,7 @@ export const PerfilInfluencer: React.FC = () => {
 									<p className="text-xs uppercase font-bold text-slate-500 flex items-center gap-2">
 										<CalendarDays size={14} /> Ultimo post
 									</p>
-									<p className="text-sm font-semibold text-slate-800 mt-2">{formatDate(profile.latest_post_date)}</p>
+								<p className="text-sm font-semibold text-slate-800 mt-2">{formatDate(latestPostDate)}</p>
 								</div>
 
 								<div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
