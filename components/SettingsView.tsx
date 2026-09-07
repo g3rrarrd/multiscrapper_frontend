@@ -21,7 +21,7 @@ export const SettingsView: React.FC = () => {
   const [cpIdentifierType, setCpIdentifierType] = useState<'username' | 'email'>('username');
   const [cpNewPassword, setCpNewPassword] = useState('');
   const [cpShowPassword, setCpShowPassword] = useState(false);
-  const [cpLoading] = useState(false); // kept for UI compatibility
+  const [cpLoading, setCpLoading] = useState(false); // Cambiado a useState(false)
   const [cpSuccess, setCpSuccess] = useState('');
   const [cpError, setCpError] = useState('');
 
@@ -36,46 +36,23 @@ export const SettingsView: React.FC = () => {
       setCpError('La contraseña debe tener al menos 8 caracteres.');
       return;
     }
-    // El endpoint de cambio de contraseña se gestiona via Django Admin.
-    // Redirigir al panel de administración de Django.
-    const adminUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '') + '/admin/auth/user/';
-    setCpSuccess(`Para cambiar la contraseña de "${cpIdentifier}", accede al panel de administración de Django.`);
-    setTimeout(() => {
-      window.open(adminUrl, '_blank');
-    }, 800);
-  };
 
-  const handleSave = async () => {
-    setIsSaving(true);
-    setSaveStatus(null);
+    setCpLoading(true);
     try {
       const payload = {
-        ig: { general: keys.ig_keys.split(',').map(k => k.trim()).filter(Boolean) },
-        tk: { 
-          search: keys.tk_search.split(',').map(k => k.trim()).filter(Boolean),
-          posts: keys.tk_posts.split(',').map(k => k.trim()).filter(Boolean)
-        },
-        x: {
-          search: keys.x_search.split(',').map(k => k.trim()).filter(Boolean),
-          posts: keys.x_posts.split(',').map(k => k.trim()).filter(Boolean)
-        },
-        fb: { general: keys.fb_keys.split(',').map(k => k.trim()).filter(Boolean) },
-        yt: { general: keys.yt_keys.split(',').map(k => k.trim()).filter(Boolean) }
+        [cpIdentifierType]: cpIdentifier.trim(),
+        new_password: cpNewPassword,
       };
 
-      await api.post('scraper/bulk_update/', payload);
-      setSaveStatus({
-        type: 'success',
-        message: 'Configuración guardada y encriptada con AES-128 en la base de datos de Django.'
-      });
+      const response = await api.post('scraper/change_password/', payload);
+      setCpSuccess(response.data.message || 'Contraseña actualizada correctamente.');
+      setCpIdentifier('');
+      setCpNewPassword('');
     } catch (error: any) {
-      const msg = error.response?.data?.error || error.response?.data?.detail || 'Error al actualizar las llaves de API.';
-      setSaveStatus({
-        type: 'error',
-        message: msg
-      });
+      const msg = error.response?.data?.error || error.response?.data?.detail || 'Error al cambiar la contraseña.';
+      setCpError(msg);
     } finally {
-      setIsSaving(false);
+      setCpLoading(false);
     }
   };
 
@@ -92,22 +69,20 @@ export const SettingsView: React.FC = () => {
       <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-2xl">
         <button
           onClick={() => setActiveTab('api')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'api' 
-              ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm' 
-              : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${activeTab === 'api'
+            ? 'bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-sm'
+            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
         >
           <KeyRound size={15} />
           <span>API Keys por Red</span>
         </button>
         <button
           onClick={() => setActiveTab('password')}
-          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${
-            activeTab === 'password' 
-              ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm' 
-              : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
-          }`}
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-xs font-bold transition-all ${activeTab === 'password'
+            ? 'bg-white dark:bg-slate-900 text-amber-600 dark:text-amber-400 shadow-sm'
+            : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
         >
           <Lock size={15} />
           <span>Cambiar Contraseña</span>
@@ -127,7 +102,7 @@ export const SettingsView: React.FC = () => {
               <textarea
                 placeholder="key1, key2, key3..."
                 value={keys.ig_keys}
-                onChange={(e) => setKeys({...keys, ig_keys: e.target.value})}
+                onChange={(e) => setKeys({ ...keys, ig_keys: e.target.value })}
                 className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-xs font-mono text-slate-800 dark:text-slate-200"
                 rows={2}
               />
@@ -142,7 +117,7 @@ export const SettingsView: React.FC = () => {
                 </label>
                 <textarea
                   value={keys.tk_search}
-                  onChange={(e) => setKeys({...keys, tk_search: e.target.value})}
+                  onChange={(e) => setKeys({ ...keys, tk_search: e.target.value })}
                   placeholder="key_search_1, key_search_2..."
                   className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-xs font-mono text-slate-800 dark:text-slate-200"
                   rows={2}
@@ -155,7 +130,7 @@ export const SettingsView: React.FC = () => {
                 </label>
                 <textarea
                   value={keys.tk_posts}
-                  onChange={(e) => setKeys({...keys, tk_posts: e.target.value})}
+                  onChange={(e) => setKeys({ ...keys, tk_posts: e.target.value })}
                   placeholder="key_posts_1, key_posts_2..."
                   className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-xs font-mono text-slate-800 dark:text-slate-200"
                   rows={2}
@@ -172,7 +147,7 @@ export const SettingsView: React.FC = () => {
                 </label>
                 <textarea
                   value={keys.x_search}
-                  onChange={(e) => setKeys({...keys, x_search: e.target.value})}
+                  onChange={(e) => setKeys({ ...keys, x_search: e.target.value })}
                   placeholder="key_search_x..."
                   className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-xs font-mono text-slate-800 dark:text-slate-200"
                   rows={2}
@@ -185,7 +160,7 @@ export const SettingsView: React.FC = () => {
                 </label>
                 <textarea
                   value={keys.x_posts}
-                  onChange={(e) => setKeys({...keys, x_posts: e.target.value})}
+                  onChange={(e) => setKeys({ ...keys, x_posts: e.target.value })}
                   placeholder="key_posts_x..."
                   className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-xs font-mono text-slate-800 dark:text-slate-200"
                   rows={2}
@@ -202,7 +177,7 @@ export const SettingsView: React.FC = () => {
                 </label>
                 <textarea
                   value={keys.fb_keys}
-                  onChange={(e) => setKeys({...keys, fb_keys: e.target.value})}
+                  onChange={(e) => setKeys({ ...keys, fb_keys: e.target.value })}
                   placeholder="key_fb_1, key_fb_2..."
                   className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-xs font-mono text-slate-800 dark:text-slate-200"
                   rows={2}
@@ -215,7 +190,7 @@ export const SettingsView: React.FC = () => {
                 </label>
                 <textarea
                   value={keys.yt_keys}
-                  onChange={(e) => setKeys({...keys, yt_keys: e.target.value})}
+                  onChange={(e) => setKeys({ ...keys, yt_keys: e.target.value })}
                   placeholder="AIzaSy..."
                   className="w-full p-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-xs font-mono text-slate-800 dark:text-slate-200"
                   rows={2}
@@ -232,11 +207,10 @@ export const SettingsView: React.FC = () => {
             </div>
 
             {saveStatus && (
-              <div className={`p-4 rounded-2xl border flex items-center gap-3 text-xs font-semibold ${
-                saveStatus.type === 'success' 
-                  ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300' 
-                  : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
-              }`}>
+              <div className={`p-4 rounded-2xl border flex items-center gap-3 text-xs font-semibold ${saveStatus.type === 'success'
+                ? 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300'
+                : 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300'
+                }`}>
                 {saveStatus.type === 'success' ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
                 <span>{saveStatus.message}</span>
               </div>
@@ -275,11 +249,10 @@ export const SettingsView: React.FC = () => {
                 <button
                   key={t}
                   onClick={() => { setCpIdentifierType(t); setCpIdentifier(''); setCpSuccess(''); setCpError(''); }}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${
-                    cpIdentifierType === t 
-                      ? 'bg-amber-500 border-amber-500 text-white shadow-sm' 
-                      : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-amber-400'
-                  }`}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all ${cpIdentifierType === t
+                    ? 'bg-amber-500 border-amber-500 text-white shadow-sm'
+                    : 'bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:border-amber-400'
+                    }`}
                 >
                   {t === 'username' ? 'Por Username' : 'Por Email'}
                 </button>
@@ -329,8 +302,8 @@ export const SettingsView: React.FC = () => {
                 disabled={cpLoading}
                 className="px-8 py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white font-bold rounded-2xl shadow-md shadow-amber-500/20 flex items-center gap-2 transition-all"
               >
-                {cpLoading ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} />}
-                <span>Abrir Panel de Admin</span>
+                {cpLoading ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
+                <span>Actualizar Contraseña</span>
               </button>
             </div>
           </div>
