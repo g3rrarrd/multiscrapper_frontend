@@ -48,7 +48,7 @@ export const Layout: React.FC<LayoutProps> = ({
             <img 
               src={LogoLoto} 
               alt="Loto Logo" 
-              className="w-5 h-5 object-contain filter brightness-0 invert" 
+              className="w-5 h-5 object-contain"
             />
           </div>
           <div>

@@ -16,12 +16,12 @@ export const SettingsView: React.FC = () => {
     yt_keys: ''
   });
 
-  // --- Cambiar contraseña ---
+// --- Cambiar contraseña ---
   const [cpIdentifier, setCpIdentifier] = useState('');
   const [cpIdentifierType, setCpIdentifierType] = useState<'username' | 'email'>('username');
   const [cpNewPassword, setCpNewPassword] = useState('');
   const [cpShowPassword, setCpShowPassword] = useState(false);
-  const [cpLoading] = useState(false); // kept for UI compatibility
+  const [cpLoading, setCpLoading] = useState(false); // Cambiado a useState(false)
   const [cpSuccess, setCpSuccess] = useState('');
   const [cpError, setCpError] = useState('');
 
@@ -36,15 +36,26 @@ export const SettingsView: React.FC = () => {
       setCpError('La contraseña debe tener al menos 8 caracteres.');
       return;
     }
-    // El endpoint de cambio de contraseña se gestiona via Django Admin.
-    // Redirigir al panel de administración de Django.
-    const adminUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '') + '/admin/auth/user/';
-    setCpSuccess(`Para cambiar la contraseña de "${cpIdentifier}", accede al panel de administración de Django.`);
-    setTimeout(() => {
-      window.open(adminUrl, '_blank');
-    }, 800);
-  };
 
+    setCpLoading(true);
+    try {
+      const payload = {
+        [cpIdentifierType]: cpIdentifier.trim(),
+        new_password: cpNewPassword,
+      };
+
+      const response = await api.post('scraper/change_password/', payload);
+      setCpSuccess(response.data.message || 'Contraseña actualizada correctamente.');
+      setCpIdentifier('');
+      setCpNewPassword('');
+    } catch (error: any) {
+      const msg = error.response?.data?.error || error.response?.data?.detail || 'Error al cambiar la contraseña.';
+      setCpError(msg);
+    } finally {
+      setCpLoading(false);
+    }
+  };
+  
   const handleSave = async () => {
     setIsSaving(true);
     setSaveStatus(null);
@@ -329,8 +340,8 @@ export const SettingsView: React.FC = () => {
                 disabled={cpLoading}
                 className="px-8 py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white font-bold rounded-2xl shadow-md shadow-amber-500/20 flex items-center gap-2 transition-all"
               >
-                {cpLoading ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} />}
-                <span>Abrir Panel de Admin</span>
+                {cpLoading ? <Loader2 size={16} className="animate-spin" /> : <KeyRound size={16} />}
+                <span>Actualizar Contraseña</span>
               </button>
             </div>
           </div>
