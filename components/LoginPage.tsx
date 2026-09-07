@@ -23,7 +23,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [error, setError] = useState<string | null>(null);
 
   const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
-  const loginUrl = `${baseUrl}/api/auth/login/`;
+  // POST /api/token/ — SimpleJWT estándar (username + password → access + refresh)
+  const loginUrl = `${baseUrl}/api/token/`;
   const registerUrl = `${baseUrl}/api/auth/register/`;
 
   const handleLogin = async () => {
@@ -37,23 +38,32 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     setSuccessMessage(null);
 
     try {
+      // SimpleJWT espera el campo 'username' (puede ser username o email según config del backend)
       const response = await fetch(loginUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          identifier: identifier.trim(),
+          username: identifier.trim(),
           password,
         }),
       });
 
       if (!response.ok) {
-        setError(response.status === 401
-          ? 'Credenciales inválidas. Intenta nuevamente.'
-          : 'No fue posible iniciar sesión. Verifica la configuración del servidor.');
+        let errorMsg = 'No fue posible iniciar sesión. Verifica la configuración del servidor.';
+        if (response.status === 401) {
+          errorMsg = 'Credenciales inválidas. Intenta nuevamente.';
+        } else {
+          try {
+            const errData = await response.json();
+            if (errData?.detail) errorMsg = errData.detail;
+          } catch { /* ignore */ }
+        }
+        setError(errorMsg);
         setLoading(false);
         return;
       }
 
+      // SimpleJWT devuelve { access, refresh } directamente
       const data = await response.json();
       if (!data?.access) {
         setError('La respuesta del servidor no incluye token de acceso.');
@@ -67,8 +77,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
       }
 
       const profile: UserProfile = {
-        displayName: data.user?.display_name ?? data.user?.name ?? data.user?.username ?? identifier,
-        email: data.user?.email ?? '',
+        displayName: identifier.trim(),
+        email: '',
       };
       localStorage.setItem('user_profile', JSON.stringify(profile));
       onLoginSuccess(profile);
