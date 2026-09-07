@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Save, Key, ShieldCheck, AlertTriangle, Loader2, Facebook, Youtube, Eye, EyeOff, Lock, KeyRound, CheckCircle2 } from 'lucide-react';
+import { Save, Key, ShieldCheck, AlertTriangle, Loader2, Facebook, Youtube, Eye, EyeOff, Lock, KeyRound, CheckCircle2, ExternalLink } from 'lucide-react';
 import api from '../api/axiosConfig';
 
 export const SettingsView: React.FC = () => {
@@ -21,7 +21,7 @@ export const SettingsView: React.FC = () => {
   const [cpIdentifierType, setCpIdentifierType] = useState<'username' | 'email'>('username');
   const [cpNewPassword, setCpNewPassword] = useState('');
   const [cpShowPassword, setCpShowPassword] = useState(false);
-  const [cpLoading, setCpLoading] = useState(false);
+  const [cpLoading] = useState(false); // kept for UI compatibility
   const [cpSuccess, setCpSuccess] = useState('');
   const [cpError, setCpError] = useState('');
 
@@ -36,22 +36,13 @@ export const SettingsView: React.FC = () => {
       setCpError('La contraseña debe tener al menos 8 caracteres.');
       return;
     }
-    setCpLoading(true);
-    try {
-      const body: Record<string, string> = {
-        [cpIdentifierType]: cpIdentifier.trim(),
-        new_password: cpNewPassword,
-      };
-      const { data } = await api.post<{ status: string; message: string }>('scraper/change_password/', body);
-      setCpSuccess(data.message || 'Contraseña actualizada correctamente.');
-      setCpIdentifier('');
-      setCpNewPassword('');
-    } catch (err: any) {
-      const msg = err.response?.data?.error || err.response?.data?.detail || 'Error al cambiar la contraseña.';
-      setCpError(msg);
-    } finally {
-      setCpLoading(false);
-    }
+    // El endpoint de cambio de contraseña se gestiona via Django Admin.
+    // Redirigir al panel de administración de Django.
+    const adminUrl = (import.meta.env.VITE_API_URL || '').replace(/\/api\/?$/, '').replace(/\/$/, '') + '/admin/auth/user/';
+    setCpSuccess(`Para cambiar la contraseña de "${cpIdentifier}", accede al panel de administración de Django.`);
+    setTimeout(() => {
+      window.open(adminUrl, '_blank');
+    }, 800);
   };
 
   const handleSave = async () => {
@@ -338,8 +329,8 @@ export const SettingsView: React.FC = () => {
                 disabled={cpLoading}
                 className="px-8 py-3 bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white font-bold rounded-2xl shadow-md shadow-amber-500/20 flex items-center gap-2 transition-all"
               >
-                {cpLoading ? <Loader2 size={16} className="animate-spin" /> : <Lock size={16} />}
-                <span>Actualizar Contraseña</span>
+                {cpLoading ? <Loader2 size={16} className="animate-spin" /> : <ExternalLink size={16} />}
+                <span>Abrir Panel de Admin</span>
               </button>
             </div>
           </div>

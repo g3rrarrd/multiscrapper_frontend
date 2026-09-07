@@ -2,6 +2,15 @@ import axios from 'axios';
 import { emitPermissionDenied } from '../utils/permissionEvents';
 import { PostComment, SinglePostResponse, UserCommentsResponse, ScrapeResult } from '../types';
 
+export interface PostCommentsResponse {
+  post_id: number | string;
+  post_username: string;
+  post_platform: string;
+  post_description: string;
+  total_comments: number;
+  comments: PostComment[];
+}
+
 const rawBase = (import.meta.env.VITE_API_URL || '').trim();
 const cleanBase = rawBase.replace(/\/+$/, '');
 const baseURL = cleanBase 
@@ -75,10 +84,16 @@ export const scraperApi = {
     return data;
   },
 
-  // Comentarios de un post individual
+  // Comentarios de un post individual (retorna el objeto completo con metadata)
+  async getPostCommentsRaw(postId: string | number): Promise<PostCommentsResponse> {
+    const { data } = await api.get<PostCommentsResponse>(`scraper/post-comments/?post_id=${postId}`);
+    return data;
+  },
+
+  // Comentarios de un post individual (solo el array de comentarios)
   async getPostComments(postId: string | number): Promise<PostComment[]> {
-    const { data } = await api.get<PostComment[]>(`scraper/post-comments/?post_id=${postId}`);
-    return Array.isArray(data) ? data : [];
+    const { data } = await api.get<PostCommentsResponse>(`scraper/post-comments/?post_id=${postId}`);
+    return Array.isArray(data?.comments) ? data.comments : [];
   },
 
   // Comentarios acumulados de un usuario

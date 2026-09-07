@@ -20,7 +20,8 @@ import {
   MessageCircle,
   ChevronRight
 } from 'lucide-react';
-import api, { scraperApi } from '../api/axiosConfig';
+import api from '../api/axiosConfig';
+import { scraperApi } from '../api/axiosConfig';
 import { PlutchikWheel } from './PlutchikWheel';
 import { CommentsDrawer } from './CommentsDrawer';
 
@@ -192,19 +193,16 @@ export const PerfilInfluencer: React.FC = () => {
     setStatusMessage(null);
 
     try {
-      await api.get<InfluencerProfilePayload>('scraper/influencer_profile/');
+      // Obtener todos los posts y extraer usernames únicos
+      const posts = await scraperApi.getUserHistory('*');
+      const uniqueUsernames = Array.from(new Set(posts.map((p: any) => p.username).filter(Boolean))) as string[];
+      setInfluencersList(uniqueUsernames.sort());
     } catch (error: any) {
-      const payload = error?.response?.data as InfluencerProfilePayload | undefined;
-      const list = payload?.influencers_list ?? [];
-      setInfluencersList(Array.isArray(list) ? list : []);
-      if (payload?.error) {
-        setStatusMessage(payload.error);
-      }
+      console.error('Error cargando lista de influencers:', error);
+      setStatusMessage('No se pudo cargar la lista de influencers.');
+    } finally {
       setIsLoadingList(false);
-      return;
     }
-
-    setIsLoadingList(false);
   };
 
   useEffect(() => {
@@ -222,28 +220,53 @@ export const PerfilInfluencer: React.FC = () => {
     setStatusMessage(null);
 
     try {
-      const response = await api.get<InfluencerProfilePayload>('scraper/influencer_profile/', {
-        params: { username },
-      });
+      // Usar user_history para buscar posts del usuario
+      const posts = await scraperApi.getUserHistory(username);
 
-      setProfile(response.data.influencer ?? null);
+      if (!posts || posts.length === 0) {
+        setProfile(null);
+        setStatusMessage(`No se encontraron posts para el usuario "${username}".`);
+        return;
+      }
+
+      // Agregar datos del perfil desde los posts
+      const latestPost = posts[0];
+      const sentimientos = {
+        alegria: latestPost.alegria,
+        confianza: latestPost.confianza,
+        miedo: latestPost.miedo,
+        sorpresa: latestPost.sorpresa,
+        tristeza: latestPost.tristeza,
+        aversion: latestPost.aversion,
+        ira: latestPost.ira,
+        anticipacion: latestPost.anticipacion,
+      };
+
+      const builtProfile: InfluencerDetails = {
+        username: latestPost.username,
+        total_posts: posts.length,
+        latest_platform: latestPost.platform,
+        latest_followers: latestPost.followers ?? latestPost.usuario?.followers ?? 0,
+        latest_post_date: latestPost.post_date ?? latestPost.date ?? latestPost.created_at ?? null,
+        last_updated: latestPost.created_at ?? null,
+        sentimiento_global: latestPost.sentimiento_global ?? null,
+        is_loto: latestPost.is_loto,
+        ...sentimientos,
+        posts,
+      };
+
+      setProfile(builtProfile);
       setPostFilterField('all');
       setPostFilterText('');
       setPostRegexMode(false);
       setPostDateFrom('');
       setPostDateTo('');
       setPostIsLotoFilter('all');
-      setInfluencersList(response.data.influencers_list ?? []);
       setStatusMessage(null);
     } catch (error: any) {
-      const payload = error?.response?.data as InfluencerProfilePayload | undefined;
       setProfile(null);
-
-      if (payload?.influencers_list) {
-        setInfluencersList(payload.influencers_list);
-      }
-
-      setStatusMessage(payload?.error ?? 'No se pudo consultar el perfil del influencer.');
+      const msg = error?.response?.data?.error ?? 'No se pudo consultar el perfil del influencer.';
+      setStatusMessage(msg);
     } finally {
       setIsSearching(false);
     }
