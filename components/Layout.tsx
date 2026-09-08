@@ -53,10 +53,10 @@ export const Layout: React.FC<LayoutProps> = ({
           </div>
           <div>
             <h1 className="font-black text-lg tracking-tight text-white flex items-center gap-1.5">
-              Multi-Scraper
+              Loto Scraper
             </h1>
             <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">
-              Media Pro HN
+              Media Pro
             </p>
           </div>
         </div>
