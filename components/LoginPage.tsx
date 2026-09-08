@@ -24,7 +24,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
   const baseUrl = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
   // POST /api/token/ — SimpleJWT estándar (username + password → access + refresh)
-  const loginUrl = `${baseUrl}/api/token/`;
+  const loginUrl = `${baseUrl}/api/auth/login/`;
   const registerUrl = `${baseUrl}/api/auth/register/`;
 
   const handleLogin = async () => {
@@ -43,21 +43,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          username: identifier.trim(),
+          identifier: identifier.trim(), // Cambiado de username a identifier
           password,
         }),
       });
 
       if (!response.ok) {
         let errorMsg = 'No fue posible iniciar sesión. Verifica la configuración del servidor.';
-        if (response.status === 401) {
-          errorMsg = 'Credenciales inválidas. Intenta nuevamente.';
-        } else {
-          try {
-            const errData = await response.json();
-            if (errData?.detail) errorMsg = errData.detail;
-          } catch { /* ignore */ }
-        }
+        try {
+          const errData = await response.json();
+          // Django envía 'error', o DRF puede enviar diccionarios de validación por campo
+          errorMsg = errData?.error || errData?.detail || JSON.stringify(errData);
+        } catch { /* ignore */ }
+        
         setError(errorMsg);
         setLoading(false);
         return;

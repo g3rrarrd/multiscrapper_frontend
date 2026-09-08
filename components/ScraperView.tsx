@@ -72,18 +72,20 @@ export const ScraperView: React.FC<ScraperViewProps> = ({ platform: initialPlatf
         const segments = url.pathname.split('/').filter(s => s.length > 0);
         
         if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
-          return url.searchParams.get('v') || segments[segments.length - 1].replace('@', '');
+          return (url.searchParams.get('v') || segments[segments.length - 1]).replace('@', '');
         }
         
         if (segments.length > 0) {
           let user = segments[0];
           if (['groups', 'pages', 'reels'].includes(user) && segments[1]) user = segments[1];
-          return user.split('?')[0];
+          // Limpiamos parámetros de URL y quitamos el '@'
+          return user.split('?')[0].replace('@', '');
         }
       }
     } catch {
       // Ignorar fallo de parseo
     }
+    // Para casos que no son URL o caen aquí por respaldo, también quitamos el '@'
     return cleaned.split('?')[0].split('/')[0].replace('@', '');
   };
 
@@ -135,7 +137,7 @@ export const ScraperView: React.FC<ScraperViewProps> = ({ platform: initialPlatf
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPolling) {
-      interval = setInterval(fetchResults, 3000);
+      interval = setInterval(fetchResults, 16000);
       fetchResults();
     }
     return () => clearInterval(interval);
