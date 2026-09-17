@@ -32,6 +32,10 @@ export const ScraperView: React.FC<ScraperViewProps> = ({ platform: initialPlatf
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [expandedPostId, setExpandedPostId] = useState<string | number | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [loadingMessage, setLoadingMessage] = useState(
+      'Conectando con la red social...'
+    );
 
   // Drawer de comentarios
   const [commentsDrawerOpen, setCommentsDrawerOpen] = useState(false);
@@ -42,26 +46,37 @@ export const ScraperView: React.FC<ScraperViewProps> = ({ platform: initialPlatf
 
   // Efecto para la barra de progreso
   useEffect(() => {
-    if (isProcessing) {
-      const interval = setInterval(() => {
-        setProgress(prev => (prev < 90 ? prev + 5 : prev));
-      }, 400);
-      return () => clearInterval(interval);
-    } else if (!isPolling) {
-      setProgress(0);
-    }
-  }, [isProcessing, isPolling]);
+    if (!isPolling) return;
 
-  const getExpectedCount = () => {
-    switch (currentPlatform) {
-      case 'yt': return 25;
-      case 'x': return 19;
-      case 'fb': return 16;
-      case 'tk': return 15;
-      case 'ig': return 12;
-      default: return 10;
-    }
-  };
+    const messages = [
+      'Conectando con la red social...',
+      'Obteniendo perfiles...',
+      'Extrayendo publicaciones...',
+      'Recuperando comentarios...',
+      'Analizando sentimientos con IA...',
+      'Guardando resultados...',
+    ];
+
+    let index = 0;
+
+    const interval = setInterval(() => {
+      index = (index + 1) % messages.length;
+      setLoadingMessage(messages[index]);
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [isPolling]);
+
+  // const getExpectedCount = () => {
+  //   switch (currentPlatform) {
+  //     case 'yt': return 25;
+  //     case 'x': return 19;
+  //     case 'fb': return 16;
+  //     case 'tk': return 12;
+  //     case 'ig': return 9;
+  //     default: return 9;
+  //   }
+  // };
 
   const cleanTarget = (input: string): string => {
     let cleaned = input.trim();
@@ -113,16 +128,18 @@ export const ScraperView: React.FC<ScraperViewProps> = ({ platform: initialPlatf
       if (newData.length > 0) {
         setResults(prev => {
           const combined = [...newData, ...prev];
-          const uniqueResults = Array.from(
-            new Map(combined.map(item => [item.id, item])).values()
-          );
+          // const uniqueResults = Array.from(
+          //   new Map(combined.map(item => [item.id, item])).values()
+          // );
 
-          if (uniqueResults.length >= getExpectedCount()) {
-            setIsPolling(false);
-            setStatus(`Extracción completada con ${uniqueResults.length} publicaciones.`);
-            setProgress(100);
-          }
-          return uniqueResults;
+          // if (uniqueResults.length >= getExpectedCount()) {
+          //   setIsPolling(false);
+          //   setStatus(`Extracción completada con ${uniqueResults.length} publicaciones.`);
+          //   setProgress(100);
+          // }
+          return Array.from(
+                  new Map(combined.map(item => [item.id, item])).values()
+                );
         });
       }
     } catch (error: any) {
@@ -135,13 +152,76 @@ export const ScraperView: React.FC<ScraperViewProps> = ({ platform: initialPlatf
   };
 
   useEffect(() => {
+
     let interval: NodeJS.Timeout;
-    if (isPolling) {
-      interval = setInterval(fetchResults, 16000);
+
+    if (isPolling && jobId) {
+
+      fetchJobStatus();
       fetchResults();
+
+      interval = setInterval(async () => {
+        await fetchJobStatus();
+        await fetchResults();
+      }, 5000);
     }
-    return () => clearInterval(interval);
-  }, [isPolling, lastStartedAt]);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+
+  }, [isPolling, jobId]);
+
+  const fetchJobStatus = async () => {
+    if (!jobId) return;
+
+    try {
+      const job = await scraperApi.getJobStatus(jobId);
+
+      setProgress(job.progress);
+
+      if (job.status === 'COMPLETED') {
+
+        setLoadingMessage(
+          'Extracción finalizada correctamente'
+        );
+
+        await fetchResults();
+
+        setProgress(100);
+        setIsPolling(false);
+
+        setStatus(
+          `Extracción completada (${job.processed_targets}/${job.total_targets})`
+        );
+      }
+
+      if (job.status === 'RUNNING') {
+
+        setStatus(
+          `Procesando ${job.processed_targets} de ${job.total_targets} perfiles (${job.progress}%)`
+        );
+
+      }
+
+      if (job.status === 'FAILED') {
+
+        setLoadingMessage(
+          'Ocurrió un error durante la extracción'
+        );
+
+        setIsPolling(false);
+
+        setStatus(
+          job.error_message ||
+          'La extracción falló.'
+        );
+      }
+
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleRunScraper = async () => {
     const allLines = manualText.split('\n').map(l => l.trim()).filter(Boolean);
@@ -156,15 +236,22 @@ export const ScraperView: React.FC<ScraperViewProps> = ({ platform: initialPlatf
     }
 
     setIsProcessing(true);
-    setProgress(15);
+    setProgress(0);
     setResults([]); 
+
+    setLoadingMessage(
+      'Conectando con la red social...'
+    );
+
     setStatus(`Iniciando extracción en ${currentPlatform.toUpperCase()} para: ${targets.join(', ')}`);
 
     try {
       const data = await scraperApi.triggerExtraction(currentPlatform, targets);
-      setLastStartedAt(data.started_at); 
-      setIsPolling(true); 
-      setStatus(`Procesando lista en hilos daemon del servidor...`);
+
+      setJobId(data.job_id);
+      setLastStartedAt(data.started_at);
+      setIsPolling(true);
+      setStatus(`Extraccion iniciada`);
     } catch (error: any) {
       setStatus(error.response?.data?.error || error.message || 'Error al iniciar extracción.');
       setIsPolling(false);
@@ -431,6 +518,39 @@ export const ScraperView: React.FC<ScraperViewProps> = ({ platform: initialPlatf
                       <span className="leading-relaxed">{status}</span>
                     </div>
                   )}
+
+                  {isPolling && (
+                    <div className="space-y-3 p-4 bg-blue-50 dark:bg-blue-950/20 rounded-2xl border border-blue-200 dark:border-blue-900">
+
+                      <div className="flex items-center justify-between">
+
+                        <div className="flex items-center gap-2">
+                          <Loader2
+                            size={15}
+                            className="animate-spin text-blue-600"
+                          />
+
+                          <span className="text-xs font-semibold text-blue-700 dark:text-blue-300">
+                            {loadingMessage}
+                          </span>
+                        </div>
+
+                        <span className="text-xs font-bold text-blue-700 dark:text-blue-300">
+                          {progress}%
+                        </span>
+
+                      </div>
+
+                      <div className="w-full h-3 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-700"
+                          style={{ width: `${progress}%` }}
+                        />
+                      </div>
+
+                    </div>
+                  )}
+
                 </div>
               </div>
             </div>

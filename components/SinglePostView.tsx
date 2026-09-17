@@ -33,7 +33,7 @@ const PLATFORMS: PlatformConfig[] = [
     inputLabel: 'URL del Post de Instagram',
     paramName: 'post_url',
     placeholder: 'https://www.instagram.com/p/CODIGO_POST/',
-    example: 'https://www.instagram.com/loto_hn/p/C_abc123/',
+    example: 'C_abc123 or https://www.instagram.com/loto_hn/p/C_abc123/',
     hint: 'Pega la URL completa de la publicación o reel.',
   },
   {
@@ -45,7 +45,7 @@ const PLATFORMS: PlatformConfig[] = [
     inputLabel: 'Video ID o URL de TikTok',
     paramName: 'videoId',
     placeholder: '7306132438047116586 o URL',
-    example: 'https://www.tiktok.com/@usuario/video/7306132438047116586',
+    example: '7306132438047116586 or https://www.tiktok.com/@usuario/video/7306132438047116586',
     hint: 'Ingresa el ID numérico o pega el enlace completo y lo extraeremos.',
   },
   {
@@ -57,7 +57,7 @@ const PLATFORMS: PlatformConfig[] = [
     inputLabel: 'Tweet ID o URL del Tweet',
     paramName: 'tweet_id',
     placeholder: '1671370010743263233 o URL',
-    example: 'https://x.com/usuario/status/1671370010743263233',
+    example: '1671370010743263233 or https://x.com/usuario/status/1671370010743263233',
     hint: 'Ingresa el ID del tweet o pega el enlace de X.',
   },
   {
@@ -68,8 +68,8 @@ const PLATFORMS: PlatformConfig[] = [
     badgeColor: 'text-blue-500 bg-blue-500/10 border-blue-500/20',
     inputLabel: 'URL del Post de Facebook',
     paramName: 'post_url',
-    placeholder: 'https://www.facebook.com/photo?fbid=1709187494547460',
-    example: 'https://www.facebook.com/pagina/posts/1709187494547460',
+    placeholder: 'https://www.facebook.com/pagina/posts/1671370010743263233',
+    example: 'https://www.facebook.com/reel/1671370010743263233',
     hint: 'Pega la URL del post. Se codificará automáticamente.',
   },
   {
@@ -93,6 +93,9 @@ export const SinglePostView: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [currentResult, setCurrentResult] = useState<SinglePostResponse | null>(null);
   const [history, setHistory] = useState<SinglePostResponse[]>([]);
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobProgress, setJobProgress] = useState(0);
+  const [jobMessage, setJobMessage] = useState('');
   
   // Drawer de comentarios
   const [commentsDrawerOpen, setCommentsDrawerOpen] = useState(false);
@@ -139,11 +142,77 @@ export const SinglePostView: React.FC = () => {
           if (match && match[1]) return match[1];
         }
       }
+
+      if (platform === 'ig') {
+        const match = raw.match(
+          /instagram\.com\/(?:[^/]+\/)?(?:p|reel|tv)\/([^/?#&]+)/
+        );
+
+        if (match?.[1]) {
+          return match[1];
+        }
+      }
     } catch {
       // Retorna raw si falla el parseo
     }
 
     return raw;
+  };
+
+  const pollJobStatus = async (jobId: string) => {
+    const interval = setInterval(async () => {
+      try {
+        const job = await scraperApi.getJobStatus(jobId);
+
+        setJobProgress(job.progress || 0);
+        setJobMessage(job.status_message || '');
+
+        if (job.status === 'COMPLETED') {
+          clearInterval(interval);
+
+          const result =
+            await scraperApi.getPostById(
+              job.result_post_id
+            );
+
+          setCurrentResult(result);
+
+          setHistory(prev => [
+            result,
+            ...prev.filter(
+              h => h.post_id !== result.post_id
+            )
+          ]);
+
+          setJobId(null);
+          setLoading(false);
+        }
+
+        if (job.status === 'FAILED') {
+          clearInterval(interval);
+
+          setError(
+            job.error_message ||
+            'Error procesando publicación'
+          );
+
+          setJobProgress(0);
+          setJobMessage('');
+          setJobId(null);
+          setLoading(false);
+        }
+      } catch (err) {
+        clearInterval(interval);
+
+        setJobId(null);
+        setJobProgress(0);
+        setJobMessage('');
+
+        setLoading(false);
+
+        setError('Error consultando estado del job');
+      }
+    }, 2000);
   };
 
   const handleExtract = async (e: React.FormEvent) => {
@@ -154,21 +223,48 @@ export const SinglePostView: React.FC = () => {
       setError('Por favor ingresa un enlace o identificador válido.');
       return;
     }
+    setCurrentResult(null);
+
+    setJobId(null);
+    setJobProgress(0);
+    setJobMessage('');
 
     setLoading(true);
     setError(null);
 
     try {
-      const data = await scraperApi.scrapeSinglePost(selectedPlatform, cleanParam);
+      const data = await scraperApi.scrapeSinglePost(
+        selectedPlatform,
+        cleanParam
+      );
+
+      if ('job_id' in data) {
+
+        setJobId(data.job_id);
+
+        await pollJobStatus(
+          data.job_id
+        );
+
+        return;
+      }
+
       setCurrentResult(data);
-      setHistory(prev => [data, ...prev.filter(h => h.post_id !== data.post_id)]);
+
+      setHistory(prev => [
+        data,
+        ...prev.filter(
+          h => h.post_id !== data.post_id
+        )
+      ]);
+
     } catch (err: any) {
       console.error('Error al procesar post unitario:', err);
       const msg = err.response?.data?.error || err.response?.data?.detail || err.message || 'Error al procesar la publicación.';
       setError(msg);
     } finally {
-      setLoading(false);
-    }
+        
+      }
   };
 
   const openComments = (postId: number | string, username: string) => {
@@ -208,6 +304,11 @@ export const SinglePostView: React.FC = () => {
                 setSelectedPlatform(plat.key);
                 setInputValue('');
                 setError(null);
+                setCurrentResult(null);
+
+                setJobId(null);
+                setJobProgress(0);
+                setJobMessage('');
               }}
               className={`group relative p-4 rounded-2xl border transition-all duration-300 text-left flex flex-col justify-between overflow-hidden ${
                 isSelected
@@ -243,7 +344,7 @@ export const SinglePostView: React.FC = () => {
               {activeConfig.inputLabel}
             </label>
             <span className="text-[11px] text-slate-400">
-              Ej: <span className="font-mono text-slate-600 dark:text-slate-300">{activeConfig.example}</span>
+              <b><b>Ej: <span className="font-mono text-slate-600 dark:text-slate-300">{activeConfig.example}</span></b></b>
             </span>
           </div>
 
@@ -301,6 +402,31 @@ export const SinglePostView: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Barra de Carga */}
+      {loading && jobId && (
+        <div className="mt-6 p-5 rounded-2xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/30">
+          
+          <div className="flex justify-between mb-2">
+            <span className="text-sm font-semibold">
+              {jobMessage}
+            </span>
+
+            <span className="text-sm font-bold">
+              {jobProgress}%
+            </span>
+          </div>
+
+          <div className="w-full h-3 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+            <div
+              className="h-full bg-blue-600 transition-all duration-500"
+              style={{
+                width: `${jobProgress}%`
+              }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Tarjeta de Resultado Actual */}
       {currentResult && (

@@ -11,6 +11,20 @@ export interface PostCommentsResponse {
   comments: PostComment[];
 }
 
+export interface JobStatusResponse {
+  job_id: string;
+  status: string;
+  progress: number;
+
+  status_message?: string;
+  result_post_id?: number;
+
+  processed_targets: number;
+  total_targets: number;
+
+  error_message?: string;
+}
+
 const rawBase = (import.meta.env.VITE_API_URL || '').trim();
 const cleanBase = rawBase.replace(/\/+$/, '');
 const baseURL = cleanBase 
@@ -90,6 +104,18 @@ export const scraperApi = {
     return data;
   },
 
+  async getPostById(
+    postId: number
+  ): Promise<SinglePostResponse> {
+
+    const { data } =
+      await api.get<SinglePostResponse>(
+        `scraper/post-detail/${postId}/`
+      );
+
+    return data;
+  },
+
   // Comentarios de un post individual (solo el array de comentarios)
   async getPostComments(postId: string | number): Promise<PostComment[]> {
     const { data } = await api.get<PostCommentsResponse>(`scraper/post-comments/?post_id=${postId}`);
@@ -105,7 +131,7 @@ export const scraperApi = {
   },
 
   // Disparar extracción masiva
-  async triggerExtraction(platform: string, targets: string[]): Promise<{ status: string; platform: string; started_at: string }> {
+  async triggerExtraction(platform: string, targets: string[]): Promise<{ status: string; platform: string; job_id: string; started_at: string }> {
     const { data } = await api.post('scraper/trigger_extraction/', {
       platform: platform.toLowerCase(),
       targets,
@@ -128,7 +154,17 @@ export const scraperApi = {
   async getUserHistory(query: string): Promise<ScrapeResult[]> {
     const { data } = await api.get<ScrapeResult[]>(`scraper/user_history/?query=${encodeURIComponent(query)}`);
     return Array.isArray(data) ? data : [];
-  }
+  },
+
+  async getJobStatus(
+    jobId: string
+  ): Promise<JobStatusResponse> {
+    const { data } = await api.get<JobStatusResponse>(
+      `job-status/${jobId}/`
+    );
+    return data;
+  },
+
 };
 
 export default api;
