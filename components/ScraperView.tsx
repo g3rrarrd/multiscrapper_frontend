@@ -416,6 +416,23 @@ export const ScraperView: React.FC<ScraperViewProps> = ({ platform: initialPlatf
         <SinglePostView />
       ) : (
         <>
+          {/* Header Visual */}
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-8 text-white border border-slate-800 shadow-xl">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="relative z-10 max-w-2xl space-y-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-bold uppercase tracking-wider border border-blue-500/30">
+                <Sparkles size={14} />
+                Módulo de Extracción Masiva
+              </div>
+              <h2 className="text-3xl font-black tracking-tight sm:text-4xl text-white">
+                Scraping de Usuarios
+              </h2>
+              <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+                Analiza cualquier usuario específico en Instagram, TikTok, X, Facebook o YouTube. Extrae publicaciones individuales, métricas clave, comentarios y análisis de sentimiento en tiempo real para obtener una visión completa del rendimiento y la percepción de su contenido.
+              </p>
+            </div>
+          </div>
+
           {/* Header y Selector de Red Social para Masivo */}
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white dark:bg-slate-900 p-4 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm">
             <div className="flex items-center gap-3">
